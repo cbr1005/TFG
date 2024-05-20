@@ -1,0 +1,153 @@
+/* Estilo para la sidebar colapsada */
+.sidebar {
+    width: 45px; /* Ancho inicial con solo íconos */
+    height: 100vh; /* Altura completa de la vista */
+    position: fixed; /* Posición fija en la pantalla */
+    top: 0;
+    left: 0;
+    background-color: #f8f9fa; /* Color de fondo */
+    overflow-x: hidden; /* Ocultar desbordamiento horizontal */
+    transition: width 0.5s; /* Transición suave al cambiar el ancho */
+    z-index: 1; /* Asegura que la barra lateral se muestre sobre el contenido de la página */
+    padding-top: 56px; /* Espacio para la navbar, ajusta según sea necesario */
+}
+
+/* Estilo para los íconos en la barra lateral */
+.sidebar .bx {
+    display: block; /* Asegurar que los íconos se muestren como bloque */
+    font-size: 20px; /* Tamaño de los íconos */
+}
+
+/* Estilo para los íconos y el texto de la barra lateral */
+.sidebar .nav-link {
+    display: flex; /* Utiliza flexbox para alinear íconos y texto */
+    align-items: center; /* Alinea los ítems verticalmente en el centro */
+    padding: 10px 15px; /* Padding para los enlaces */
+}
+
+/* Ocultar el texto de la barra lateral cuando está colapsada */
+.sidebar .nav-link .d-none {
+    display: none; /* Oculta el texto cuando la sidebar está colapsada */
+}
+
+/* Estilo para expandir la sidebar al hacer hover */
+.sidebar:hover {
+    width: 270px; /* Ancho de la sidebar expandida */
+}
+
+/* Mostrar el texto junto con los íconos al hacer hover en la sidebar */
+.sidebar:hover .nav-link .d-none {
+    display: inline; /* Muestra el texto */
+    white-space: nowrap; /* Mantiene el texto en una sola línea */
+}
+
+/* Resaltar ítem al hacer hover */
+.sidebar .nav-link:hover {
+    background-color: #e9ecef; /* Color de fondo al pasar el mouse */
+    border-radius: 0.25rem; /* Bordes redondeados */
+}
+
+/* Ajustes responsivos */
+@media (min-width: 768px) {
+    .sidebar:hover .nav-link .d-none {
+        display: inline; /* Mostrar texto en pantallas grandes al hacer hover */
+    }
+}
+
+/* Asegurar que el texto esté oculto cuando la sidebar está colapsada */
+.sidebar:not(:hover) .nav-link span {
+    display: none; /* Oculta el texto */
+}
+
+/* Asegurar que los íconos y texto estén alineados correctamente */
+.sidebar .nav-link {
+    display: flex; /* Alinea ítems horizontalmente con flexbox */
+    align-items: center; /* Alinea ítems verticalmente en el centro */
+    justify-content: start; /* Alinea el contenido al inicio (izquierda) */
+}
+
+/* Estilo para los íconos en la barra lateral para centrarlos verticalmente */
+.sidebar .nav-link i {
+    margin-right: 10px; /* Espacio entre el ícono y el texto */
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    padding: 20px;
+    box-shadow: 0 0 10px #ccc;
+    border-radius: 10px;
+}
+
+.title {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.input-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.input-group {
+    flex-basis: 48%; /* Ajusta dos elementos por fila */
+    margin-bottom: 20px;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-field{
+    width: 100%;
+}
+
+.date-picker{
+    width: 100%;
+}
+
+.date-picker .DateInput_input {
+    width: 100% !important; /* Asegurar que el input dentro del DatePicker use todo el ancho disponible */
+}
+
+.dropdown{
+    margin-left: 10px;
+    width: 100%;
+}
+
+.calculate-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px 5px; /* Añadir margen entre botones */
+}
+
+.output-container {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+
+/* Submenu estilos */
+.submenu {
+    display: none; /* Ocultar submenu por defecto */
+    padding-left: 15px; /* Espaciado del submenu */
+}
+
+.dropdown:hover .submenu {
+    display: block; /* Mostrar submenu al pasar el ratón */
+}
+
+.submenu-item {
+    padding-left: 30px; /* Espaciado de los items del submenu */
+}
