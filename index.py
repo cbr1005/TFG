@@ -3,7 +3,7 @@ from app import app
 from components.navbar import create_navbar
 from components.sidebar import create_sidebar
 from components.auth import login_layout
-from components import simulacion_de_carteras, simulacion_montecarlo, analisis_de_escenarios, optimizacion_de_carteras, analisis_de_sensibilidad, comparacion_de_estrategias, comparacion_simulaciones, metodo_explicito, metodo_implicito, metodo_mesh, metodo_nicolson
+from components import simulacion_de_carteras, simulacion_montecarlo, analisis_de_escenarios, analisis_de_sensibilidad, comparacion_de_estrategias, comparacion_simulaciones, metodo_explicito, metodo_implicito, metodo_mesh, metodo_nicolson
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -33,8 +33,6 @@ def display_page(pathname):
         return simulacion_montecarlo.layout, create_sidebar()
     elif pathname == '/scenario-analysis':
         return analisis_de_escenarios.layout, create_sidebar()
-    elif pathname == '/portfolio-optimization':
-        return optimizacion_de_carteras.layout, create_sidebar()
     elif pathname == '/sensitivity-analysis':
         return analisis_de_sensibilidad.layout, create_sidebar()
     elif pathname == '/strategy-comparison':
