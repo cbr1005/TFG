@@ -22,16 +22,6 @@ def create_sidebar():
                         active="exact",
                     ),
                     dbc.NavLink(
-                        [html.I(className="bx bx-sun"), html.Span("Análisis de Escenarios", className="d-none d-md-inline")],
-                        href="/scenario-analysis",
-                        active="exact",
-                    ),
-                    dbc.NavLink(
-                        [html.I(className="bx bx-cog"), html.Span("Optimización de Carteras", className="d-none d-md-inline")],
-                        href="/portfolio-optimization",
-                        active="exact",
-                    ),
-                    dbc.NavLink(
                         [html.I(className="bx bx-move"), html.Span("Análisis de Sensibilidad", className="d-none d-md-inline")],
                         href="/sensitivity-analysis",
                         active="exact",
@@ -58,9 +48,7 @@ def create_sidebar():
                             html.Div(
                                 [
                                     dbc.NavLink("Explícito", href="/numeric-explicit", className="submenu-item"),
-                                    dbc.NavLink("Implícito", href="/numeric-implicit", className="submenu-item"),
-                                    dbc.NavLink("Mesh", href="/numeric-mesh", className="submenu-item"),
-                                    dbc.NavLink("Nicolson", href="/numeric-nicolson", className="submenu-item"),
+                                    dbc.NavLink("Implícito", href="/numeric-implicit", className="submenu-item")
                                 ],
                                 className="submenu"
                             ),

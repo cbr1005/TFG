@@ -10,30 +10,38 @@ layout = html.Div([
     html.Div([
         html.H3("Comparación de Simulaciones de Opciones por Volatilidad", style={'textAlign': 'center'}),
         html.Div([
-            html.Div([
-                dcc.Input(id='spot_price', type='number', placeholder='Precio al contado inicial', className='input-field'),
-            ], className='input-group'),
-            html.Div([
-                dcc.Input(id='strike_price', type='number', placeholder='Precio de ejercicio', className='input-field'),
-            ], className='input-group'),
-            html.Div([
-                dcc.Input(id='interest_rate', type='number', placeholder='Tasa de interés (%)', className='input-field'),
-            ], className='input-group'),
+            html.Div(className="input-group", children=[
+                html.Label('Precio al contado inicial:', className="input-label"),
+                dcc.Input(id='spot_price', type='number', placeholder=' Ingrese el precio al contado inicial', className="input-field"),
+            ]),
+            html.Div(className="input-group", children=[
+                html.Label('Precio de ejercicio:', className="input-label"),
+                dcc.Input(id='strike_price', type='number', placeholder=' Ingrese el precio de ejercicio', className="input-field"),
+            ]),
+            html.Div(className="input-group", children=[
+                html.Label('Tasa de interés (%):', className="input-label"),
+            dcc.Input(id='interest_rate', type='number',placeholder='Ingrese la tasa de interes', className="input-field"),
+            ]),
             html.Div(className="input-group", children=[
                 html.Label('Fecha actual:', className="input-label"),
                 dcc.DatePickerSingle(id='comp-date-value', date='2024-05-01', className="date-picker"),
             ]),
             html.Div(className="input-group", children=[
                 html.Label('Fecha de vencimiento:', className="input-label"),
-                dcc.DatePickerSingle(id='comp-date-expiration', date='2024-11-01', className="date-picker"),
+                dcc.DatePickerSingle(id='comp-date-expiration', date=None, className="date-picker"),
             ]),
-            html.Div([
+            html.Div(className="input-group", children=[
+                html.Label('Tipo de opción:', className="input-label"),
                 dcc.Dropdown(
-                    id='option_type', 
-                    options=[{'label': 'Call', 'value': 'call'}, {'label': 'Put', 'value': 'put'}],
-                    placeholder='Tipo de opción', value='call', className='dropdown'
+                    id='option_type',
+                    options=[
+                        {'label': 'Call', 'value': 'call'},
+                        {'label': 'Put', 'value': 'put'}
+                    ],
+                    value='call',
+                    className="dropdown"
                 ),
-            ], className='input-group'),
+            ]),
         ], className='input-container'),
         html.Div([
             html.Button('Añadir Volatilidad', id='add_volatility', n_clicks=0, className='calculate-button'),
@@ -43,7 +51,7 @@ layout = html.Div([
     ]),
     dcc.Graph(id='option_prices_graph'),
     html.Div(id='conclusions', className='output-container')
-], style={'width': '80%', 'margin': 'auto'})
+], className="container")
 
 @callback(
     Output('volatility_inputs', 'children'),

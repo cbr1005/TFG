@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 from app import app
 
 
-login_layout = dbc.Container(
+login_layout =(
     [
         dbc.Row(
             dbc.Col(
@@ -17,10 +17,10 @@ login_layout = dbc.Container(
                     ])
                 ]),
                 width=6
-            ), justify="center"
+            ), justify="center",
+            style={'marginTop': 50}
         )
-    ],
-    style={'marginTop': '100px'},  # Margen adicional entre la navbar y el
+    ]
 )
 
 @app.callback(
@@ -33,7 +33,7 @@ login_layout = dbc.Container(
 def update_output(n_clicks, username, password):
     if n_clicks is None:
         return ""
-    if username == "CandidaOviedo" and password == "TFG":
+    if username == "CarlosBarrio" and password == "TFG":
         return dcc.Location(pathname="/welcome", id="location-welcome")  # Redirige a la página de bienvenida
     else:
         # Muestra un mensaje de error si las credenciales son incorrectas
