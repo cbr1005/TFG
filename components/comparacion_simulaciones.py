@@ -1,35 +1,36 @@
 from dash import dcc, html, Input, Output, State, callback, ALL
 import plotly.graph_objs as go
 import numpy as np
-import pandas as pd
 from datetime import datetime
-from components.funciones import calcular_opcion_estandar_precio
-from app import app
+from components.funciones import function_option_price
+
+
 
 layout = html.Div([
     html.Div([
         html.H3("Comparación de Simulaciones de Opciones por Volatilidad", style={'textAlign': 'center'}),
         html.Div([
             html.Div(className="input-group", children=[
-                html.Label('Precio al contado inicial:', className="input-label"),
-                dcc.Input(id='spot_price', type='number', placeholder=' Ingrese el precio al contado inicial', className="input-field"),
+                html.Label('Precio del activo subyacente:', className="input-label"),
+                dcc.Input(id='spot_price', type='number', placeholder='Ingrese el precio del activo subyacente', className="input-field"),
             ]),
             html.Div(className="input-group", children=[
-                html.Label('Precio de ejercicio:', className="input-label"),
-                dcc.Input(id='strike_price', type='number', placeholder=' Ingrese el precio de ejercicio', className="input-field"),
+                html.Label('Precio del ejercicio:', className="input-label"),
+                dcc.Input(id='strike_price', type='number', placeholder='Ingrese el precio del ejercicio', className="input-field"),
             ]),
             html.Div(className="input-group", children=[
                 html.Label('Tasa de interés (%):', className="input-label"),
-            dcc.Input(id='interest_rate', type='number',placeholder='Ingrese la tasa de interes', className="input-field"),
+                dcc.Input(id='interest_rate', type='number', placeholder='Ingrese la tasa de interés', className="input-field"),
             ]),
             html.Div(className="input-group", children=[
                 html.Label('Fecha actual:', className="input-label"),
-                dcc.DatePickerSingle(id='comp-date-value', date='2024-05-01', className="date-picker"),
+                dcc.DatePickerSingle(id='comp-date-value', date=datetime.today().date(), className="date-picker"),
             ]),
             html.Div(className="input-group", children=[
                 html.Label('Fecha de vencimiento:', className="input-label"),
                 dcc.DatePickerSingle(id='comp-date-expiration', date=None, className="date-picker"),
             ]),
+            html.Div(id='error-message-com', className="error-message-container"),  
             html.Div(className="input-group", children=[
                 html.Label('Tipo de opción:', className="input-label"),
                 dcc.Dropdown(
@@ -53,6 +54,7 @@ layout = html.Div([
     html.Div(id='conclusions', className='output-container')
 ], className="container")
 
+
 @callback(
     Output('volatility_inputs', 'children'),
     Input('add_volatility', 'n_clicks'),
@@ -69,9 +71,16 @@ def add_volatility_input(n_clicks, children):
     children.append(new_element)
     return children
 
+def apply_visual_offset(prices, index):
+    """ Aplica un pequeño offset visual a los precios para evitar superposiciones en el gráfico. """
+    offset = index * 0.05 * max(prices) 
+    return [price + offset for price in prices]
+
+
 @callback(
     [Output('option_prices_graph', 'figure'),
-     Output('conclusions', 'children')],
+     Output('conclusions', 'children'),
+     Output('error-message-com', 'children')], 
     Input('compare', 'n_clicks'),
     State({'type': 'volatility_input', 'index': ALL}, 'value'),
     State('spot_price', 'value'), State('strike_price', 'value'),
@@ -79,35 +88,38 @@ def add_volatility_input(n_clicks, children):
     State('comp-date-expiration', 'date'), State('option_type', 'value')
 )
 def update_graphs(n_clicks, volatilities, spot, strike, rate, val_date, exp_date, opt_type):
-    if n_clicks > 0:
-        fig = go.Figure()
-        val_date = datetime.strptime(val_date, '%Y-%m-%d')
-        exp_date = datetime.strptime(exp_date, '%Y-%m-%d')
-        spot_prices = np.linspace(spot * 0.5, spot * 1.5, 100)
-        conclusions = []
+    if n_clicks == 0:
+        return go.Figure(), [], html.Div()  
 
-        for vol in filter(None, volatilities):
-            vol = float(vol) / 100
-            prices = [calcular_opcion_estandar_precio(s, strike, rate / 100, val_date, exp_date, vol, opt_type)[0][0] for s in spot_prices]
-            fig.add_trace(go.Scatter(x=spot_prices, y=prices, mode='lines', name=f'Vol: {vol * 100}%'))
+    if not all([spot, strike, rate, val_date, exp_date, opt_type]):
+        error_message = html.Div([
+            html.H4("Error de entrada:", style={'color': 'red'}),
+            html.P("Todos los campos deben estar completos antes de comparar.", style={'color': 'red'})
+        ], style={'border': '2px solid red', 'padding': '10px', 'border-radius': '5px'})
+        return go.Figure(), [], error_message
 
-            conclusion_text = (
-                f"Para una volatilidad de {vol * 100}%, el precio de la opción varía significativamente a medida que el precio del activo subyacente "
-                f"cambia. Esto se debe a que una mayor volatilidad generalmente aumenta el valor de las opciones, ya que hay más probabilidad de que "
-                f"la opción termine en el dinero (ITM). En este caso, hemos analizado cómo esta volatilidad específica afecta el precio de la opción "
-                f"desde un precio del activo subyacente de {spot * 0.5:.2f} hasta {spot * 1.5:.2f}. Observa cómo las curvas de precios responden a "
-                f"cambios en el precio del activo subyacente, reflejando el impacto de la volatilidad en el valor de la opción."
-            )
+    val_date = datetime.strptime(val_date, '%Y-%m-%d')
+    exp_date = datetime.strptime(exp_date, '%Y-%m-%d')
+    if exp_date <= val_date:
+        error_message = html.Div([
+            html.H4("Error de Fecha:", style={'color': 'red'}),
+            html.P("La fecha de vencimiento debe ser posterior a la fecha actual.", style={'color': 'red'})
+        ], style={'border': '2px solid red', 'padding': '10px', 'border-radius': '5px'})
+        return go.Figure(), [], error_message
 
-            conclusions.append(html.Div([
-                html.H4(f"Conclusión para Volatilidad {vol * 100}%:"),
-                html.P(conclusion_text)
-            ]))
+    T = (exp_date - val_date).days / 365.25
+    rate = rate / 100
 
-        fig.update_layout(title='Valor de Opción por Precio del Activo Subyacente',
-                          xaxis_title='Precio del Activo Subyacente',
-                          yaxis_title='Valor de la Opción')
+    fig = go.Figure()
+    spot_prices = np.linspace(spot * 0.5, spot * 1.5, 100)
 
-        return fig, conclusions
-    
-    return go.Figure(), []
+    volatilities = [float(vol) / 100 for vol in volatilities if vol]  
+    for index, vol in enumerate(volatilities):
+        prices = [function_option_price(s, strike, rate, T, vol, opt_type) for s in spot_prices]
+        adjusted_prices = apply_visual_offset(prices, index)
+        fig.add_trace(go.Scatter(x=spot_prices, y=adjusted_prices, mode='lines', name=f'Vol: {vol * 100:.2f}%'))
+
+    fig.update_layout(title='Valor de Opción por Precio del Activo Subyacente',
+                      xaxis_title='Precio del Activo Subyacente',
+                      yaxis_title='Valor de la Opción')
+    return fig, [], html.Div() 

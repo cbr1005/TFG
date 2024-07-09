@@ -1,111 +1,208 @@
-import math
+from dash import dcc, html
+from scipy.stats import norm
+import numpy as np
+from datetime import datetime
 
 
 
+def function_option_price(S, K, r, T, sigma, option_type):
+    """
+    Calcula el precio de una opción europea (compra o venta) utilizando el modelo de Black-Scholes.
+    
+    Parámetros:
+        S (float): Precio actual del activo subyacente.
+        K (float): Precio de ejercicio de la opción.
+        r (float): Tasa de interés libre de riesgo (anual).
+        T (float): Tiempo hasta el vencimiento de la opción (en años).
+        sigma (float): Volatilidad del activo.
+        option_type (str): Tipo de opción ('call' para compra, 'put' para venta).
+    
+    Devuelve:
+        float: Precio calculado de la opción.
+    """
 
-def calcular_opcion_estandar_precio(Spot, Strike, tasa_interes, fecha_valor, fecha_vencimiento, volatilidad, tipo_opcion="call"):
-    # Cálculo de variables necesarias
-    S = Spot
-    K = Strike
-    T = (fecha_vencimiento - fecha_valor).days / 365  # Tiempo hasta el vencimiento en años
-    r = tasa_interes
-    sigma = volatilidad
-    Factor = math.exp(-r * T)  # Factor de descuento
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    if option_type == 'call':
+        return S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+    else:
+        return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+    
 
-    # Cálculo de los valores de d1 y d2 para el modelo de Black-Scholes
-    d1 = (math.log(S / K) + (r - + 0.5 * sigma ** 2) * T) / (sigma * math.sqrt(T))
-    d2 = d1 - (sigma * math.sqrt(T))
+def plot_option_evolution(S, K, r, sigma, T, num_steps, option_type):
+    """
+    Calcula y devuelve los precios de una opción en diferentes momentos hasta su vencimiento.
+    
+    Parámetros:
+        S (float): Precio actual del activo.
+        K (float): Precio de ejercicio.
+        r (float): Tasa de interés libre de riesgo.
+        sigma (float): Volatilidad del activo.
+        T (float): Tiempo total hasta el vencimiento en años.
+        num_steps (int): Número de intervalos de tiempo para calcular el precio de la opción.
+        option_type (str): Tipo de opción ('call' o 'put').
+    
+    Devuelve:
+        tuple of lists: Dos listas, una con los tiempos y otra con los precios de la opción en esos tiempos.
+    """
 
-    # Cálculo de las probabilidades acumuladas y no acumuladas de d1 y d2
-    Nd1 = norm_dist(d1, True)
-    Ndd1 = norm_dist(d1, False)
-    Nd2 = norm_dist(d2, True)
+    times = np.linspace(0, T, num_steps)
+    option_prices = [function_option_price(S, K, r, T - ti, sigma, option_type) for ti in times]
+    return times, option_prices
 
-    # Cálculo del precio de la opción estándar
-    precio_opcion = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+def monte_carlo_simulation(S, K, r, T, sigma, option_type, M):
+    """
+    Realiza una simulación de Monte Carlo para estimar el precio de una opción a través de la simulación de precios del activo subyacente.
+    
+    Parámetros:
+        S (float): Precio inicial del activo.
+        K (float): Precio de ejercicio de la opción.
+        r (float): Tasa de interés libre de riesgo.
+        T (float): Tiempo hasta el vencimiento de la opción en años.
+        sigma (float): Volatilidad del activo.
+        option_type (str): Tipo de la opción ('call' o 'put').
+        M (int): Número de simulaciones a realizar.
+    
+    Devuelve:
+        tuple of lists: Tiempos en los que se evalúa el precio y el valor esperado de los pagos de la opción.
+    """
 
-    precio_opcion[0][0] = (math.exp(1 * T) * S * Nd1 - K * Factor * Nd2)
-    precio_opcion[0][1] = Nd1 * math.exp(1 * T)
-    precio_opcion[0][2] = Ndd1 * math.exp(1 * T) / (S * sigma * math.sqrt(T))
-    precio_opcion[0][3] = Ndd1 * math.exp(1 * T) * S * math.sqrt(T)
-
-    # Ajuste para opción put si es necesario
-    if tipo_opcion.lower()[0] == "p":
-        precio_opcion[0][0] = precio_opcion[0][0] - S * math.exp(1 * T) + K * Factor
-        precio_opcion[0][1] = precio_opcion[0][1] - math.exp(1 * T)
-
-    precio_opcion[1][0] = precio_opcion[0][1]
-    precio_opcion[2][0] = precio_opcion[0][2]
-    precio_opcion[3][0] = precio_opcion[0][3]
-
-    return precio_opcion
-
-
-def calcular_volatilidad_implícita(Spot, Strike, tasa_interes, fecha_valor, fecha_vencimiento, Precio, dividendos=0, tipo_opcion="call", precision=0.000001):
-    # Inicialización de las volatilidades mínima y máxima
-    vol_min = 0.00001
-    vol_max = 200
-    error = 1
-
-    # Verificación de errores en el cálculo de la volatilidad implícita
-    if error_vol_implícita_black_scholes(Spot, Strike, tasa_interes, dividendos, (fecha_vencimiento - fecha_valor).days / 365, Precio, tipo_opcion):
-        return "ERROR"
-
-    # Búsqueda de la volatilidad implícita utilizando el método de bisección
-    while error > precision:
-        precio1 = calcular_opcion_estandar_precio(Spot, Strike, tasa_interes, fecha_valor, fecha_vencimiento, vol_min, dividendos, tipo_opcion)
-        precio2 = calcular_opcion_estandar_precio(Spot, Strike, tasa_interes, fecha_valor, fecha_vencimiento, vol_max, dividendos, tipo_opcion)
-        volatilidad = (vol_min + vol_max) / 2
-        precio_int = calcular_opcion_estandar_precio(Spot, Strike, tasa_interes, fecha_valor, fecha_vencimiento, volatilidad, dividendos, tipo_opcion)
-        if (precio_int[0][0] - Precio) * (precio2[0][0] - Precio) > 0:
-            vol_max = volatilidad
+    num_steps = 365
+    times = np.linspace(0, T, num_steps)
+    dt = T / num_steps
+    paths = np.zeros((num_steps, M))
+    payoffs = np.zeros((num_steps, M))
+    paths[0] = S
+    for t in range(1, num_steps):
+        Z = np.random.standard_normal(M)
+        paths[t] = paths[t-1] * np.exp((r - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * Z)
+        if option_type == 'call':
+            payoffs[t] = np.exp(-r * (T - t/num_steps)) * np.maximum(paths[t] - K, 0)
         else:
-            vol_min = volatilidad
-        error = abs(precio1[0][0] - precio2[0][0])
-
-    return volatilidad
-
-
-def calcular_opcion_black_76_precio(Forward, Strike, tasa_interes, fecha_valor, fecha_vencimiento, Volatilidad, tipo_opcion="call"):
-    # Simplemente redirige la llamada a la función de cálculo de opción estándar para el modelo Black-76
-    return calcular_opcion_estandar_precio(Forward, Strike, tasa_interes, fecha_valor, fecha_vencimiento, Volatilidad, tasa_interes, tipo_opcion)
+            payoffs[t] = np.exp(-r * (T - t/num_steps)) * np.maximum(K - paths[t], 0)
+    mean_payoffs = np.mean(payoffs, axis=1)
+    return times, mean_payoffs
 
 
-def calcular_volatilidad_implícita_black_76(Forward, Strike, tasa_interes, fecha_valor, fecha_vencimiento, Precio, tipo_opcion="call", precision=0.000001):
-    # Simplemente redirige la llamada a la función de cálculo de volatilidad implícita para el modelo Black-76
-    return calcular_volatilidad_implícita(Forward, Strike, tasa_interes, fecha_valor, fecha_vencimiento, Precio, tasa_interes, tipo_opcion, precision)
+def simulate_gbm(S0, r, sigma, T, M, I):
+    """
+    Simula múltiples trayectorias de precios para un activo usando el modelo geométrico de movimiento browniano.
+    
+    Parámetros:
+        S0 (float): Precio inicial del activo.
+        r (float): Tasa de interés libre de riesgo.
+        sigma (float): Volatilidad del activo.
+        T (float): Duración del período de simulación.
+        M (int): Número de pasos temporales en la simulación.
+        I (int): Número de caminos independientes a simular.
+    
+    Devuelve:
+        numpy.ndarray: Una matriz que contiene todas las trayectorias de precios simuladas.
+    """
+
+    dt = T / M
+    paths = np.zeros((M + 1, I))
+    paths[0] = S0
+    for t in range(1, M + 1):
+        z = np.random.standard_normal(I)
+        paths[t] = paths[t - 1] * np.exp((r - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * z)
+    return paths
+
+def monte_carlo_option_pricing(S0, E, r, sigma, T, M, I):
+    """
+    Calcula el precio de opciones de compra y venta utilizando el método de Monte Carlo a partir de trayectorias simuladas.
+    
+    Parámetros:
+        S0 (float): Precio inicial del activo.
+        E (float): Precio de ejercicio de las opciones.
+        r (float): Tasa de interés libre de riesgo.
+        sigma (float): Volatilidad del activo.
+        T (float): Tiempo hasta el vencimiento de la opción.
+        M (int): Número de pasos temporales en la simulación.
+        I (int): Número de caminos simulados.
+    
+    Devuelve:
+        tuple (float, float): Precio de la opción de compra y venta calculados.
+    """
+
+    paths = simulate_gbm(S0, r, sigma, T, M, I)
+    S_T = paths[-1]
+    call_payoff = np.maximum(S_T - E, 0)
+    put_payoff = np.maximum(E - S_T, 0)
+    call_price = np.exp(-r * T) * np.mean(call_payoff)
+    put_price = np.exp(-r * T) * np.mean(put_payoff)
+    return call_price, put_price
 
 
-def error_vol_implícita_black_scholes(Spot, Strike, tasa_interes, Dividendos, plazo, Precio, tipo_opcion):
-    # Verifica si hay errores en los cálculos de la volatilidad implícita
-    try:
-        OutPut = False
 
-        if tipo_opcion.lower()[0] == "c":
-            if Precio < math.exp(-tasa_interes * plazo) * max(Spot * math.exp((tasa_interes - Dividendos) * plazo) - Strike, 0):
-                OutPut = True
-        elif tipo_opcion.lower()[0] == "p":
-            if Precio < math.exp(-tasa_interes * plazo) * max(-Spot * math.exp((tasa_interes - Dividendos) * plazo) + Strike, 0):
-                OutPut = True
+
+def determine_optimal_strategy(spot, strike, rate, volatility, date_value, date_expiration, option_type):
+    """
+    Determines the optimal options strategy based on market conditions and option parameters.
+    """
+    # Define volatility thresholds
+    high_volatility_threshold = 25
+    low_volatility_threshold = 15
+    
+    # Calculate the number of days to expiration
+    days_to_expiration = (date_expiration - date_value).days
+    
+    # Calculate expected price movement
+    expected_price_movement = (volatility / 100) * spot * np.sqrt(days_to_expiration / 365.25)
+    price_movement_threshold = 0.1 * spot  # 10% of spot price
+
+    # Debugging output
+    print(f"Volatility: {volatility}, Expected Price Movement: {expected_price_movement}, Threshold: {price_movement_threshold}")
+
+    if volatility > high_volatility_threshold:
+        if expected_price_movement > price_movement_threshold:
+            return 'Straddle'
         else:
-            OutPut = True
-
-        if Spot <= 0 or Strike <= 0 or plazo < 0 or Precio >= Spot:
-            OutPut = True
-
-    except:
-        OutPut = True
-
-    return OutPut
-
-
-def norm_dist(x, cumulative=True):
-    # Función auxiliar para calcular la función de distribución normal
-    try:
-        from scipy.stats import norm
-        if cumulative:
-            return norm.cdf(x)
+            return 'Strangle'
+    elif volatility < low_volatility_threshold:
+        if expected_price_movement < price_movement_threshold:
+            return 'Butterfly Spread'
+    else:
+        # Check relative position of spot to strike
+        if spot >= strike:
+            return 'Bull Spread'
         else:
-            return norm.pdf(x)
-    except ImportError:
-        return "Scipy is required for normal distribution calculation."
+            return 'Bear Spread'
+
+
+def add_volatility_input(n_clicks, children):
+    """
+    Añade un campo de entrada para la volatilidad a una interfaz de usuario web de forma dinámica.
+    
+    Parámetros:
+        n_clicks (int): Número de clics realizados, usado para indexar el nuevo campo de entrada.
+        children (list): Lista actual de elementos HTML en la interfaz.
+    
+    Devuelve:
+        list: Lista actualizada de elementos HTML con el nuevo campo de entrada añadido.
+    """
+
+    new_element = html.Div([
+        dcc.Input(
+            id={'type': 'volatility_input', 'index': n_clicks},
+            type='number', placeholder='Volatilidad %',
+            style={'marginRight': '5px', 'width': '200px'}
+        )
+    ])
+    children.append(new_element)
+    return children
+
+def apply_visual_offset(prices, index):
+    """
+    Aplica un desplazamiento visual a una lista de precios para mejorar la visualización en gráficos.
+    
+    Parámetros:
+        prices (list of float): Lista de precios originales.
+        index (int): Índice utilizado para calcular el desplazamiento basado en el máximo de los precios.
+    
+    Devuelve:
+        list of float: Lista de precios ajustados con el desplazamiento aplicado.
+    """
+    offset = index * 0.05 * max(prices)  
+    return [price + offset for price in prices]
+

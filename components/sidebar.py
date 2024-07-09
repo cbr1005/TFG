@@ -17,7 +17,7 @@ def create_sidebar():
                         active="exact",
                     ),
                     dbc.NavLink(
-                        [html.I(className="bx bx-line-chart"), html.Span("Simulación Monte Carlo", className="d-none d-md-inline")],
+                        [html.I(className="bx bx-line-chart"), html.Span("Simulación Movimiento Browniano", className="d-none d-md-inline")],
                         href="/montecarlo-simulation",
                         active="exact",
                     ),
@@ -35,25 +35,6 @@ def create_sidebar():
                         [html.I(className="bx bx-layer"), html.Span("Comparación de Simulaciones", className="d-none d-md-inline")],
                         href="/option-simulation-comparison",
                         active="exact",
-                    ),
-                    html.Div(
-                        [
-                            dbc.NavLink(
-                                [html.I(className="bx bx-math"), html.Span("Métodos Numéricos", className="d-none d-md-inline")],
-                                href="#",
-                                id="numeric-methods-dropdown",
-                                className="dropdown-toggle",
-                                active="exact"
-                            ),
-                            html.Div(
-                                [
-                                    dbc.NavLink("Explícito", href="/numeric-explicit", className="submenu-item"),
-                                    dbc.NavLink("Implícito", href="/numeric-implicit", className="submenu-item")
-                                ],
-                                className="submenu"
-                            ),
-                        ],
-                        className="dropdown"
                     ),
                 ],
                 vertical=True,

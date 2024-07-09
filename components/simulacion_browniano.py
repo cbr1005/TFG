@@ -3,31 +3,18 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-
-def simulate_gbm(S0, r, sigma, T, M, I):
-    dt = T / M
-    paths = np.zeros((M + 1, I))
-    paths[0] = S0
-    for t in range(1, M + 1):
-        z = np.random.standard_normal(I)
-        paths[t] = paths[t - 1] * np.exp((r - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * z)
-    return paths
-
-def monte_carlo_option_pricing(S0, E, r, sigma, T, M, I):
-    paths = simulate_gbm(S0, r, sigma, T, M, I)
-    S_T = paths[-1]
-    call_payoff = np.maximum(S_T - E, 0)
-    put_payoff = np.maximum(E - S_T, 0)
-    call_price = np.exp(-r * T) * np.mean(call_payoff)
-    put_price = np.exp(-r * T) * np.mean(put_payoff)
-    return call_price, put_price
+from components.funciones import simulate_gbm, monte_carlo_option_pricing
 
 layout = html.Div([
-    html.H1("Simulación de Monte Carlo", className="text-center title"),
+    html.H1("Simulación del Movimiento Browniano Geometrico", className="text-center title"),
     html.Div(className="input-container", children=[
         html.Div(className="input-group", children=[
-            html.Label('Precio al contado inicial:', className="input-label"),
-            dcc.Input(id='montecarlo-spot', type='number', placeholder='Ingrese valor inicial', className="input-field"),
+            html.Label('Precio del activo subyacente:', className="input-label"),
+            dcc.Input(id='montecarlo-spot', type='number', placeholder='Ingrese precio del activo subyacente', className="input-field"),
+        ]),
+        html.Div(className="input-group", children=[
+            html.Label('Precio del ejercicio:', className="input-label"),
+            dcc.Input(id='montecarlo-strike', type='number', placeholder='Ingrese precio del ejercicio', className="input-field"),
         ]),
         html.Div(className="input-group", children=[
             html.Label('Tasa de interés (%):', className="input-label"),
@@ -62,17 +49,20 @@ layout = html.Div([
      Output('montecarlo-error-message', 'children')],
     Input('montecarlo-button-simulate', 'n_clicks'),
     State('montecarlo-spot', 'value'),
+    State('montecarlo-strike', 'value'),
     State('montecarlo-volatility', 'value'),
     State('montecarlo-rate', 'value'),
     State('montecarlo-date-value', 'date'),
     State('montecarlo-date-expiration', 'date'),
     State('montecarlo-num-paths', 'value')
 )
-def update_simulation(n_clicks, spot, volatility, rate, date_value, date_expiration, num_paths):
+def update_simulation(n_clicks, spot,strike, volatility, rate, date_value, date_expiration, num_paths):
     if n_clicks > 0:
         missing_fields = []
         if spot is None:
             missing_fields.append("Precio al contado inicial")
+        if strike is None:
+            missing_fields.append("Precio de ejercicio") 
         if volatility is None:
             missing_fields.append("Volatilidad")
         if rate is None:
@@ -101,22 +91,21 @@ def update_simulation(n_clicks, spot, volatility, rate, date_value, date_expirat
             return px.line(), html.Div(), error_message
 
         T = (date_expiration - date_value).days / 365
-        M = 252  # Número de pasos en el tiempo
-        I = max(num_paths, 1)  # Asegurar que I sea al menos 1
+        M = 252  
+        I = max(num_paths, 1)  
 
         rate = rate / 100
         volatility = volatility / 100
 
         paths = simulate_gbm(spot, rate, volatility, T, M, I)
-        strike_price = spot
-        call_price, put_price = monte_carlo_option_pricing(spot, strike_price, rate, volatility, T, M, I)
+        call_price, put_price = monte_carlo_option_pricing(spot, strike, rate, volatility, T, M, I)
 
         df = pd.DataFrame(paths)
         df['Día'] = np.arange(M + 1)
         df_melted = df.melt(id_vars=['Día'], var_name='Simulación', value_name='Precio')
 
-        fig = px.line(df_melted, x='Día', y='Precio', color='Simulación', title="Simulación de Monte Carlo del Precio del Subyacente")
-        fig.update_layout(xaxis_title="Días", yaxis_title="Precio", showlegend=False)
+        fig = px.line(df_melted, x='Día', y='Precio', color='Simulación', title="Simulación del movimiento Browniano geometrico del precio del subyacente")
+        fig.update_layout(xaxis_title="Días hasta fecha de vencimiento", yaxis_title="Precio activo subyacente", showlegend=False)
 
         min_price = df_melted['Precio'].min()
         max_price = df_melted['Precio'].max()
@@ -132,5 +121,4 @@ def update_simulation(n_clicks, spot, volatility, rate, date_value, date_expirat
 
         return fig, conclusion, html.Div()
 
-    # Devuelve valores por defecto cuando no se ha hecho click
     return px.line(), html.Div(), html.Div()

@@ -1,10 +1,10 @@
-from dash import dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output
 from dash_bootstrap_components import Container, Row, Col, Card, CardBody, Button
 from app import app
 from components.navbar import create_navbar
 from components.sidebar import create_sidebar
 from components.auth import login_layout
-from components import simulaciones, simulacion_montecarlo, analisis_de_sensibilidad, comparacion_de_estrategias, comparacion_simulaciones, metodo_explicito, metodo_implicito
+from components import simulaciones, simulacion_browniano, analisis_de_sensibilidad, comparacion_de_estrategias, comparacion_simulaciones
 
 
 app.layout = html.Div([
@@ -36,14 +36,14 @@ def display_page(pathname):
                 Col(Card([
                     CardBody([
                         html.H4("Simulación de Carteras", className="card-title text-center"),
-                        html.P("Este código calcula precios de opciones financieras utilizando el modelo Black-Scholes y simulación de Monte Carlo, mostrando gráficas de la evolución del precio de la opción."),
+                        html.P("Este código calcula precios de opciones financieras utilizando el modelo Black-Scholes y simulación de movimiento Browniano Geometrico, mostrando gráficas de la evolución del precio de la opción."),
                         Button("Explorar", href="/portfolio-simulation", className="stretched-link")
                     ])
                 ], className="mb-3"), md=4),
                 Col(Card([
                     CardBody([
-                        html.H4("Simulación de Monte Carlo", className="card-title text-center"),
-                        html.P("Calcula y compara precios de opciones Call y Put utilizando la simulación de Monte Carlo y visualiza la evolución del precio del activo subyacente."),
+                        html.H4("Simulación de Movimiento Browniano", className="card-title text-center"),
+                        html.P("Calcula y compara precios de opciones Call y Put utilizando la simulación del movimiento Browniano Geometrico y visualiza la evolución del precio del activo subyacente."),
                         Button("Explorar", href="/montecarlo-simulation", className="stretched-link")
                     ])
                 ], className="mb-3"), md=4),
@@ -70,12 +70,6 @@ def display_page(pathname):
                         Button("Explorar", href="/option-simulation-comparison", className="stretched-link")
                     ])
                 ], className="mb-3"), md=4),
-                Col(Card([
-                    CardBody([
-                        html.H4("Métodos Numéricos", className="card-title text-center"),
-                        html.P("Explora métodos numéricos como diferencias finitas explícitas e implícitas para calcular precios de opciones financieras.")
-                    ])
-                ], className="mb-3"), md=4),
             ])
         ], className="container",fluid=True)
         return content, sidebar
@@ -84,21 +78,15 @@ def display_page(pathname):
     elif pathname == '/portfolio-simulation':
         return simulaciones.layout, create_sidebar()
     elif pathname == '/montecarlo-simulation':
-        return simulacion_montecarlo.layout, create_sidebar()
+        return simulacion_browniano.layout, create_sidebar()
     elif pathname == '/sensitivity-analysis':
         return analisis_de_sensibilidad.layout, create_sidebar()
     elif pathname == '/strategy-comparison':
         return comparacion_de_estrategias.layout, create_sidebar()
     elif pathname == '/option-simulation-comparison':
         return comparacion_simulaciones.layout, create_sidebar()
-    elif pathname == '/numeric-explicit':
-        return metodo_explicito.layout, create_sidebar()
-    elif pathname == '/numeric-implicit':
-        return metodo_implicito.layout, create_sidebar()
     else:
         return login_layout, None
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-
-

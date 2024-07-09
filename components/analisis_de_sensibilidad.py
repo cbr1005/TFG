@@ -3,18 +3,18 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime
-from components.funciones import calcular_opcion_estandar_precio
+from components.funciones import function_option_price
 
 layout = html.Div([
     html.H1("Análisis de Sensibilidad", className="text-center title"),
     html.Div(className="input-container", children=[
         html.Div(className="input-group", children=[
-            html.Label('Precio al contado inicial:', className="input-label"),
-            dcc.Input(id='sens-spot', type='number', placeholder='Ingrese valor inicial', className="input-field"),
+            html.Label('Precio del activo subyacente:', className="input-label"),
+            dcc.Input(id='sens-spot', type='number', placeholder='Ingrese precio del activo subyacente', className="input-field"),
         ]),
         html.Div(className="input-group", children=[
-            html.Label('Precio de ejercicio:', className="input-label"),
-            dcc.Input(id='sens-strike', type='number', placeholder='Ingrese precio de ejercicio', className="input-field"),
+            html.Label('Precio del ejercicio:', className="input-label"),
+            dcc.Input(id='sens-strike', type='number', placeholder='Ingrese precio del ejercicio', className="input-field"),
         ]),
         html.Div(className="input-group", children=[
             html.Label('Tasa de interés (%):', className="input-label"),
@@ -64,6 +64,7 @@ layout = html.Div([
     State('sens-date-expiration', 'date'),
     State('sens-option-type', 'value')
 )
+
 def analyze_sensitivity(n_clicks, spot, strike, rate, volatility, date_value, date_expiration, option_type):
     if n_clicks > 0:
         missing_fields = []
@@ -75,43 +76,43 @@ def analyze_sensitivity(n_clicks, spot, strike, rate, volatility, date_value, da
             missing_fields.append("Tasa de interés")
         if volatility is None:
             missing_fields.append("Volatilidad")
-        if date_value is None:
-            missing_fields.append("Fecha actual")
-        if date_expiration is None:
-            missing_fields.append("Fecha de vencimiento")
-        if not missing_fields:
-            date_value = datetime.strptime(date_value, '%Y-%m-%d')
-            date_expiration = datetime.strptime(date_expiration, '%Y-%m-%d')
+        if date_value is None or date_expiration is None:
+            missing_fields.append("Fechas (actual y de vencimiento)")
 
-            if date_expiration <= date_value:
-                error_message = html.Div([
-                    html.H4("Error de Fecha:", style={'color': 'red'}),
-                    html.P("La fecha de vencimiento debe ser posterior a la fecha actual.", style={'color': 'red'})
-                ], style={'border': '2px solid red', 'padding': '10px', 'border-radius': '5px', 'margin-right': '20px'})
-                return px.line(), html.Div(), error_message
-
-            # Sensitivity analysis for option price vs. spot price
-            spot_prices = np.linspace(spot * 0.5, spot * 1.5, 20)
-            prices = [calcular_opcion_estandar_precio(s, strike, rate / 100, date_value, date_expiration, volatility / 100, option_type)[0][0] for s in spot_prices]
-            deltas = [calcular_opcion_estandar_precio(s, strike, rate / 100, date_value, date_expiration, volatility / 100, option_type)[0][1] for s in spot_prices]
-
-            df = pd.DataFrame({'Precio del Activo Subyacente': spot_prices, 'Valor de la Opción': prices, 'Delta': deltas})
-            fig = px.line(df, x='Precio del Activo Subyacente', y='Valor de la Opción', title='Sensibilidad del Precio de la Opción respecto al Precio al Contado')
-
-            conclusion = html.Div([
-                html.H4("Conclusión del Análisis de Sensibilidad:"),
-                html.P("Este análisis muestra cómo varía el precio de la opción respecto a cambios en el precio al contado del subyacente."),
-                html.P(f"El rango de precios de la opción analizado va desde {prices[0]:.2f} hasta {prices[-1]:.2f}."),
-                html.P("Comprender esta sensibilidad permite a los inversores anticipar cómo cambios en el mercado subyacente afectarán el valor de sus opciones, "
-                       "lo cual es crucial para la gestión de riesgos y la toma de decisiones estratégicas.")
-            ])
-
-            return fig, conclusion, html.Div()  # No error, clear the error message
-        else:
+        if missing_fields:
             error_message = html.Div([
                 html.H4("Error de entrada:", style={'color': 'red'}),
                 html.P("Los siguientes campos están vacíos y son requeridos: " + ", ".join(missing_fields), style={'color': 'red'})
             ], style={'border': '2px solid red', 'padding': '10px', 'border-radius': '5px', 'margin-right': '20px'})
             return px.line(), html.Div(), error_message
+
+        date_value = datetime.strptime(date_value, '%Y-%m-%d')
+        date_expiration = datetime.strptime(date_expiration, '%Y-%m-%d')
+        if date_expiration <= date_value:
+            error_message = html.Div([
+                html.H4("Error de Fecha:", style={'color': 'red'}),
+                html.P("La fecha de vencimiento debe ser posterior a la fecha actual.", style={'color': 'red'})
+            ], style={'border': '2px solid red', 'padding': '10px', 'border-radius': '5px', 'margin-right': '20px'})
+            return px.line(), html.Div(), error_message
+
+        T = (date_expiration - date_value).days / 365.25
+        rate = rate / 100
+        volatility = volatility / 100
+
+        spot_prices = np.linspace(spot * 0.5, spot * 1.5, 20)
+        prices = [function_option_price(s, strike, rate, T, volatility, option_type) for s in spot_prices]
+
+        df = pd.DataFrame({'Precio del Activo Subyacente': spot_prices, 'Valor de la Opción': prices})
+        fig = px.line(df, x='Precio del Activo Subyacente', y='Valor de la Opción', title='Sensibilidad del Precio de la Opción respecto al precio del activo subyacente')
+
+        conclusion = html.Div([
+            html.H4("Conclusión del Análisis de Sensibilidad:"),
+            html.P("Este análisis muestra cómo varía el precio de la opción respecto a cambios en el precio al contado del subyacente."),
+            html.P(f"El rango de precios de la opción analizado va desde {min(prices):.2f} hasta {max(prices):.2f}."),
+            html.P("Comprender esta sensibilidad permite a los inversores anticipar cómo cambios en el mercado subyacente afectarán el valor de sus opciones, "
+                   "lo cual es crucial para la gestión de riesgos y la toma de decisiones estratégicas.")
+        ])
+
+        return fig, conclusion, html.Div()  
 
     return px.line(), html.Div(), html.Div()
